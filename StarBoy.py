@@ -61,5 +61,19 @@ graph.createNodes(graph._driver)
 graph.listWordFreq(graph._driver)
 graph.listWordPairFreq(graph._driver)
 
+wdict={}
+def wordFreqToWdict():
+    with graph._driver.session() as tx:
+        for record in tx.run('''MATCH (w:lyrics)
+        RETURN w.word, w.count
+        ORDER BY w.count DESC'''):
+            wdict[record["w.word"]]=record["w.count"]
+
+def printWdict():
+    for x, y in wdict.items():
+        print(x, y)
+
+wordFreqToWdict()
+printWdict()
 
 graph.close()
