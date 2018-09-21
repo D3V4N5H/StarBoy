@@ -61,19 +61,35 @@ graph.createNodes(graph._driver)
 graph.listWordFreq(graph._driver)
 graph.listWordPairFreq(graph._driver)
 
-wdict={}
-def wordFreqToWdict():
+wDict={}
+def wordFreq_wDict():
     with graph._driver.session() as tx:
         for record in tx.run('''MATCH (w:lyrics)
         RETURN w.word, w.count
         ORDER BY w.count DESC'''):
-            wdict[record["w.word"]]=record["w.count"]
+            wDict[record["w.word"]]=record["w.count"]
 
-def printWdict():
-    for x, y in wdict.items():
+def print_wDict():
+    for x, y in wDict.items():
         print(x, y)
 
-wordFreqToWdict()
-printWdict()
+wordFreq_wDict()
+print_wDict()
+
+wpDict={}
+def wordPairFreq_wpDict():
+    with graph._driver.session() as tx:
+        for record in tx.run('''MATCH (w1:lyrics)-[r:next]->(w2:lyrics)
+        RETURN [w1.word, w2.word] AS word_pair, r.count AS count
+        ORDER BY r.count DESC'''):
+            firstWord,secondWord=record["word_pair"]
+            wpDict[(firstWord,secondWord)]=record["count"]
+
+def print_wpDict():
+    for i in wpDict.items():
+        print (i[0], i[1])
+
+wordPairFreq_wpDict()
+print_wpDict()
 
 graph.close()
