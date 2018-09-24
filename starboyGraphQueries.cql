@@ -105,3 +105,9 @@ MATCH (s)-[r:RELATED_TO]->(o:lyrics {word: 'PARTICULAR_WORD'} ) RETURN s.word,o.
 
 // Finding all word-pair relations and their Paradigmatic similarity according to Jaccard index
 MATCH (s)-[r:RELATED_TO]->(o) RETURN s.word,o.word,r.paradig AS sim ORDER BY sim DESC;
+
+// Graph based Summarization and Keyword Extraction
+MATCH p=(:lyrics)-[r:next*1..4]->(:lyrics) WITH p
+WITH reduce(s=0, r IN relationships(p) | s + r.count) AS total, p
+WITH nodes(p) AS text, 1.0*total/size(nodes(p)) AS weight
+RETURN extract( r IN text | r.word) AS phrase, weight ORDER BY weight DESC
