@@ -6,3 +6,6 @@ stringWithoutCallbackHead=r.text.replace( "callback(" , "")
 stringWtihoutCallbackHeadAndTail=stringWithoutCallbackHead.replace( ");" , "" )
 data=json.loads(stringWtihoutCallbackHeadAndTail)
 print( json.dumps( data, sort_keys=True, indent=1 ) )
+
+for artist in data["message"]["body"]["artist_list"]:
+	print(artist["artist"]["artist_name"])
