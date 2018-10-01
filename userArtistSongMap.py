@@ -29,19 +29,28 @@ def makeNodesFromAPI(driver, uName, aName, sName):
 
 graph = Graph(uri, user, password)
 graph.clearGraph(graph._driver)
-
-topArtistsIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.artists.get?format=jsonp&callback=callback&country=us&apikey="+apikey
+topArtistsIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.artists.get?format=jsonp&callback=callback&country=in&apikey="+apikey
 topArtistsIndiaResponse=requests.get(topArtistsIndiaURL)
 stringWithoutCallbackHead=topArtistsIndiaResponse.text.replace( "callback(" , "")
 stringWtihoutCallbackHeadAndTail=stringWithoutCallbackHead.replace( ");" , "" )
 topArtistsIndiaData=json.loads(stringWtihoutCallbackHeadAndTail)
-// topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"]
+# topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"]
 
 listOfArtists=[]
 
 for i in range(len(topArtistsIndiaData["message"]["body"]["artist_list"])):
     listOfArtists.append(topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"])
 
+topTracksIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.tracks.get?format=jsonp&callback=callback&country=in&apikey="+apikey
+topTracksIndiaResponse=requests.get(topTracksIndiaURL)
+stringWithoutCallbackHead=topTracksIndiaResponse.text.replace( "callback(" , "")
+stringWtihoutCallbackHeadAndTail=stringWithoutCallbackHead.replace( ");" , "" )
+topTracksIndiaData=json.loads(stringWtihoutCallbackHeadAndTail)
+
+listOfTracks=[]
+
+for i in range(len(topTracksIndiaData["message"]["body"]["track_list"])):
+    listOfTracks.append(topTracksIndiaData["message"]["body"]["track_list"][i]["track"]["track_name"])
 
 def getTrackListOfArtist(name):
     searchTracksOfArtistURL = "https://api.musixmatch.com/ws/1.1/track.search?format=jsonp&callback=callback&q_artist="+name+"&quorum_factor=1&apikey="+apikey
