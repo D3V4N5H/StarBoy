@@ -1,5 +1,6 @@
-import requests
 import json
+import requests
+from dateutil.parser import parse
 from neo4j.v1 import GraphDatabase
 
 uri = "bolt://localhost:7687"
@@ -38,18 +39,39 @@ def callAPI(url):
 
 
 topArtistsIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.artists.get?format=jsonp&callback=callback&country=in"
-topArtistsIndiaData = callAPI(topTracksIndiaURL)
+topArtistsIndiaData = callAPI(topArtistsIndiaURL)
 # topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"]
 listOfArtists=[]
 for i in range(len(topArtistsIndiaData["message"]["body"]["artist_list"])):
     listOfArtists.append(topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"])
 
 
+def getReleaseDateFromTrackId(track_id):
+    getTrackInfoURL = "https://api.musixmatch.com/ws/1.1/track.get?format=jsonp&callback=callback&track_id=" + str( track_id )
+    getTrackInfoData = callAPI(getTrackInfoURL)
+    return parse(getTrackInfoData["message"]["body"]["track"]["first_release_date"])
+
+def readable(dateObject):
+    return dateObject.date().strftime("%d %B, %Y (%A)")
+
+
 topTracksIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.tracks.get?format=jsonp&callback=callback&country=in"
 topTracksIndiaData = callAPI(topTracksIndiaURL)
-listOfTracks=[]
-for i in range(len(topTracksIndiaData["message"]["body"]["track_list"])):
-    listOfTracks.append(topTracksIndiaData["message"]["body"]["track_list"][i]["track"]["track_name"])
+listOfTracks={}
+for track in range(len(topTracksIndiaData["message"]["body"]["track_list"])):
+    listOfTracks[topTracksIndiaData["message"]["body"]["track_list"][track]["track"]["track_name"]] = \
+    { 
+        "track_id": topTracksIndiaData["message"]["body"]["track_list"][track]["track"]["track_id"],
+        "first_release_date": readable(getReleaseDateFromTrackId(topTracksIndiaData["message"]["body"]["track_list"][track]["track"]["track_id"]))
+    }
+#track_id = 86487954
+
+
+for track_name, trackInfo in listOfTracks.items():
+    print("\nTrack:", track_name)
+    
+    for key in trackInfo:
+        print(key + ':', trackInfo[key])
 
 
 def getTrackListOfArtist(name):
