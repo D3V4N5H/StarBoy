@@ -51,19 +51,25 @@ def getReleaseDateFromTrackId(track_id):
     getTrackInfoData = callAPI(getTrackInfoURL)
     return parse(getTrackInfoData["message"]["body"]["track"]["first_release_date"])
 
-def readable(dateObject):
-    return dateObject.date().strftime("%d %B, %Y (%A)")
+def readable(datetimeObject):
+    return datetimeObject.date().strftime("%d %B, %Y (%A)")
+
+
+def parseAndReadable(datetimeObject):
+    date = parse(datetimeObject)
+    return date.date().strftime("%d %B, %Y (%A)")
 
 
 topTracksIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.tracks.get?format=jsonp&callback=callback&country=in"
 topTracksIndiaData = callAPI(topTracksIndiaURL)
 listOfTracks={}
-for track in range(len(topTracksIndiaData["message"]["body"]["track_list"])):
-    listOfTracks[topTracksIndiaData["message"]["body"]["track_list"][track]["track"]["track_name"]] = \
-    { 
-        "track_id": topTracksIndiaData["message"]["body"]["track_list"][track]["track"]["track_id"],
-        "first_release_date": readable(getReleaseDateFromTrackId(topTracksIndiaData["message"]["body"]["track_list"][track]["track"]["track_id"]))
-    }
+for trackDictionary in topTracksIndiaData["message"]["body"]["track_list"]:
+    for dictionary in trackDictionary.items():
+        listOfTracks[ dictionary[1]["track_name"]] = \
+        {
+            "track_id": dictionary[1]["track_id"],
+            "first_release_date": parseAndReadable(dictionary[1]["first_release_date"])
+        }
 #track_id = 86487954
 
 
