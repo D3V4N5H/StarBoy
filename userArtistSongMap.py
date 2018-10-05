@@ -46,18 +46,9 @@ for i in range(len(topArtistsIndiaData["message"]["body"]["artist_list"])):
     listOfArtists.append(topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"])
 
 
-def getReleaseDateFromTrackId(track_id):
-    getTrackInfoURL = "https://api.musixmatch.com/ws/1.1/track.get?format=jsonp&callback=callback&track_id=" + str( track_id )
-    getTrackInfoData = callAPI(getTrackInfoURL)
-    return parse(getTrackInfoData["message"]["body"]["track"]["first_release_date"])
-
-def readable(datetimeObject):
-    return datetimeObject.date().strftime("%d %B, %Y (%A)")
-
-
-def parseAndReadable(datetimeObject):
-    date = parse(datetimeObject)
-    return date.date().strftime("%d %B, %Y (%A)")
+def parseAndReadable(weirdDateAndTime):
+    dateTimeObject = parse(weirdDateAndTime)
+    return dateTimeObject.date().strftime("%d %B, %Y (%A)")
 
 
 topTracksIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.tracks.get?format=jsonp&callback=callback&country=in"
@@ -107,3 +98,16 @@ for artist in listOfArtists:
     makeNodesFromAPI(graph._driver, userNameCount, artist, songs[0])
     if userNameCount<10:
         userNameCount+=1
+
+INSERT_LIKED_TRACKS='''
+    MERGE (u:User {name: {userName}})
+    MERGE (a:Track {track: {songName}})
+    CREATE UNIQUE (u)-[:LIKED]->(a)
+'''
+
+def insertLikedTracks(userName, songName):
+    with graph._driver.session() as session:
+        return session.run(INSERT_LIKED_TRACKS, {"userName": userName, "songName": songName})
+
+for track in listOfTracks:
+    insertLikedTracks("Indians", track)
