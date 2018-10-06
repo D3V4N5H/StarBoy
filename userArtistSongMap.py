@@ -1,6 +1,7 @@
 import json
 import requests
 from dateutil.parser import parse
+from urllib.parse import quote as encode
 from neo4j.v1 import GraphDatabase
 
 uri = "bolt://localhost:7687"
@@ -32,14 +33,15 @@ graph = Graph(uri, user, password)
 graph.clearGraph(graph._driver)
 
 
-def callAPI(url):
-    response = requests.get( url + "&apikey=" +apikey ).text
+def callAPI(method, parameters):
+    response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + apikey ).text
     callbackToJson = response.replace( "callback(" , "").replace( ");" , "" )
     return json.loads(callbackToJson)
 
 
-topArtistsIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.artists.get?format=jsonp&callback=callback&country=in"
-topArtistsIndiaData = callAPI(topArtistsIndiaURL)
+method = "chart.artists.get"
+parameters= "&country=in"
+topArtistsIndiaData = callAPI(method, parameters)
 # topArtistsIndiaData["message"]["body"]["artist_list"][i]["artist"]["artist_name"]
 listOfArtists=[]
 for i in range(len(topArtistsIndiaData["message"]["body"]["artist_list"])):
@@ -51,15 +53,24 @@ def parseAndReadable(weirdDateAndTime):
     return dateTimeObject.date().strftime("%d %B, %Y (%A)")
 
 
-topTracksIndiaURL = "https://api.musixmatch.com/ws/1.1/chart.tracks.get?format=jsonp&callback=callback&country=in"
-topTracksIndiaData = callAPI(topTracksIndiaURL)
+method="chart.tracks.get"
+parameters = "?format=jsonp&callback=callback&country=in"
+topTracksIndiaData = callAPI(method,parameters)
 listOfTracks={}
 for trackDictionary in topTracksIndiaData["message"]["body"]["track_list"]:
     for dictionary in trackDictionary.items():
+        title = "&q_track="
+        artist = "&q_artist="
+        _title= encode(dictionary[1]["track_name"])
+        _artist = encode(dictionary[1]["artist_name"])
+        parameters = title + _title + artist + _artist
+        method="matcher.lyrics.get"
         listOfTracks[ dictionary[1]["track_name"]] = \
         {
             "track_id": dictionary[1]["track_id"],
-            "first_release_date": parseAndReadable(dictionary[1]["first_release_date"])
+            "first_release_date": parseAndReadable(dictionary[1]["first_release_date"]),
+            "artist_name": dictionary[1]["track_name"],
+            "lyrics": callAPI(method,parameters)
         }
 #track_id = 86487954
 
@@ -72,8 +83,9 @@ for track_name, trackInfo in listOfTracks.items():
 
 
 def getTrackListOfArtist(name):
-    searchTracksOfArtistURL = "https://api.musixmatch.com/ws/1.1/track.search?format=jsonp&callback=callback&q_artist="+name+"&quorum_factor=1&apikey="+apikey
-    searchTracksOfArtistData = callAPI(searchTracksOfArtistURL)
+    method = "track.search"
+    parameters = "&q_artist="+name+"&quorum_factor=1&apikey="+apikey
+    searchTracksOfArtistData = callAPI(method, parameters)
     songsOfArtist=[]
     for i in range(len(searchTracksOfArtistData["message"]["body"]["track_list"])):
         songsOfArtist.append(searchTracksOfArtistData["message"]["body"]["track_list"][i]["track"]["track_name"])
