@@ -3,7 +3,6 @@ import requests
 from dateutil.parser import parse
 from urllib.parse import quote as encode
 from neo4j.v1 import GraphDatabase
-
 uri = "bolt://localhost:7687"
 user = "neo4j"
 password = "password"
@@ -14,23 +13,13 @@ class Graph(object):
     def close(self):
         self._driver.close()
     @staticmethod
-    def clearGraph(driver):
-        with driver.session() as session:
+    def clearGraph():
+        with graph._driver.session() as session:
             return session.run("MATCH (n)"
                                "DETACH DELETE n")
     
-def makeNodesFromAPI(driver, uName, aName, sName):
-    with driver.session() as session:
-        return session.run('''
-        CREATE (u1:USER {name: $uname}),
-        (s1:SONG {songName: $sname}),
-        (m1:METADATA {data: $aname}),
-        (u1)-[:LIKED]->(s1),
-        (s1)-[:ARTIST]->(m1)
-            ''', uname=uName, aname=aName, sname=sName)
-
 graph = Graph(uri, user, password)
-graph.clearGraph(graph._driver)
+graph.clearGraph()
 
 
 def callAPI(method, parameters):
@@ -65,12 +54,13 @@ for trackDictionary in topTracksIndiaData["message"]["body"]["track_list"]:
         _artist = encode(dictionary[1]["artist_name"])
         parameters = title + _title + artist + _artist
         method="matcher.lyrics.get"
+        lyrics = callAPI(method,parameters)
         listOfTracks[ dictionary[1]["track_name"]] = \
         {
             "track_id": dictionary[1]["track_id"],
             "first_release_date": parseAndReadable(dictionary[1]["first_release_date"]),
             "artist_name": dictionary[1]["track_name"],
-            "lyrics": callAPI(method,parameters)
+            "lyrics": lyrics["message"]["body"]["lyrics"]["lyrics_body"]
         }
 #track_id = 86487954
 
@@ -104,6 +94,16 @@ for artist in listOfArtists:
     print()
 
 # genre= searchTracksOfArtistData["message"]["body"]["track_list"][i]["track"]["primary_genres"]["music_genre_list"][0]["music_genre"]["music_genre_name"]
+def makeNodesFromAPI(driver, uName, aName, sName):
+    with driver.session() as session:
+        return session.run('''
+        CREATE (u1:USER {name: $uname}),
+        (s1:SONG {songName: $sname}),
+        (m1:METADATA {data: $aname}),
+        (u1)-[:LIKED]->(s1),
+        (s1)-[:ARTIST]->(m1)
+            ''', uname=uName, aname=aName, sname=sName)
+
 userNameCount=0
 for artist in listOfArtists:
     songs=getTrackListOfArtist(artist)
