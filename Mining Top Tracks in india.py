@@ -92,6 +92,18 @@ for trackDictionary in topTracksIndiaData["message"]["body"]["track_list"]:
     for dictionary in trackDictionary.items():
         allTracksLyricsForGraph[dictionary[1]["track_id"]] = getLyricsFromTrackID(dictionary[1]["track_id"])
 
+addSongNameAsLabel='''
+	MATCH (n:lyrics)
+	call apoc.create.addLabels([id(n)],[$songName]) YIELD node
+	RETURN node
+	'''
+removeLyricsLabel='''
+	MATCH (n:lyrics)
+	call apoc.create.removeLabels([id(n)],['lyrics']) YIELD node
+	RETURN node
+	'''
+
+
 for key in allTracksLyricsForGraph:
 	data = allTracksLyricsForGraph[key]["message"]["body"]["lyrics"]["lyrics_body"]
 	lyrics, disclaimer = data.split("...\n\n*******")
@@ -109,3 +121,8 @@ for key in allTracksLyricsForGraph:
 			songName = name
 	for i in range(len(words)-1):
 		createNodes(words[i], words[i+1])
+	with graph._driver.session() as session:
+		session.run(addSongNameAsLabel,songName=songName)
+	with graph._driver.session() as session:
+		session.run(removeLyricsLabel)
+	
