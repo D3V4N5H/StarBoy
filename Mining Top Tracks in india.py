@@ -1,8 +1,19 @@
-#Graph
+
 from neo4j.v1 import GraphDatabase
 uri = "bolt://localhost:7687"
 user = "neo4j"
 password = "password"
+
+addSongNameAsLabel='''
+	MATCH (n:lyrics)
+	call apoc.create.addLabels([id(n)],[$songName]) YIELD node
+	RETURN node
+	'''
+removeLyricsLabel='''
+	MATCH (n:lyrics)
+	call apoc.create.removeLabels([id(n)],['lyrics']) YIELD node
+	RETURN node
+	'''
 
 class Graph(object):
     def __init__(self, uri, user, password):
@@ -31,17 +42,11 @@ class Graph(object):
             RETURN $word, $nextWord''', word=word, nextWord=nextWord)
         return result
 
-    
-graph = Graph(uri, user, password)
-graph.clearGraph()
-
-#API Helper
 import json, requests
 def callAPI(method, parameters):
     response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + apikey ).text
     callbackToJson = response.replace( "callback(" , "").replace( ");" , "" )
     return json.loads(callbackToJson)
-
 
 def getLyrics(trackName, artistName):
 	method = "matcher.lyrics.get"
@@ -52,14 +57,26 @@ def getLyrics(trackName, artistName):
 	parameters = title + _title + artist + _artist
 	return callAPI(method,parameters)
 
-
-#Fetching List Of Top Tracks
 from urllib.parse import quote as encode
 from dateutil.parser import parse
 
 def parseAndReadable(weirdDateAndTime):
     dateTimeObject = parse(weirdDateAndTime)
     return dateTimeObject.date().strftime("%d %B, %Y (%A)")
+
+def getLyricsFromTrackID(track_id):
+	method = "track.lyrics.get"
+	parameters = "&track_id=" + str(track_id)
+	return callAPI(method, parameters)
+
+def createNodes(word, nextWord):
+        with graph._driver.session() as session:
+            greeting = session.write_transaction(graph.createNodes, word, nextWord)
+            print(greeting)
+
+
+graph = Graph(uri, user, password)
+graph.clearGraph()
 
 method = "chart.tracks.get"
 parameters = "?format=jsonp&callback=callback&country=in"
@@ -76,36 +93,12 @@ for trackDictionary in topTracksIndiaData["message"]["body"]["track_list"]:
             "lyrics": lyrics["message"]["body"]["lyrics"]["lyrics_body"]
         }
 
-
-#Import Each Song
-def createNodes(word, nextWord):
-        with graph._driver.session() as session:
-            greeting = session.write_transaction(graph.createNodes, word, nextWord)
-            print(greeting)
-
-
-def getLyricsFromTrackID(track_id):
-	method = "track.lyrics.get"
-	parameters = "&track_id=" + str(track_id)
-	return callAPI(method, parameters)
-
 allTracksLyricsForGraph={}
 for trackDictionary in topTracksIndiaData["message"]["body"]["track_list"]:
     for dictionary in trackDictionary.items():
         allTracksLyricsForGraph[dictionary[1]["track_id"]] = getLyricsFromTrackID(dictionary[1]["track_id"])
 
-addSongNameAsLabel='''
-	MATCH (n:lyrics)
-	call apoc.create.addLabels([id(n)],[$songName]) YIELD node
-	RETURN node
-	'''
-removeLyricsLabel='''
-	MATCH (n:lyrics)
-	call apoc.create.removeLabels([id(n)],['lyrics']) YIELD node
-	RETURN node
-	'''
 
-#Mining
 for key in allTracksLyricsForGraph:
 	for name, values in listOfTracks.items():
 		if values["track_id"] == key:
@@ -116,10 +109,7 @@ for key in allTracksLyricsForGraph:
 		before, rest = lyrics.split("(",maxsplit=1)
 		inside, after = rest.split(")",maxsplit=1)
 		lyrics = before + after
-	lyrics=lyrics.replace("\n\n","\n")
-	lyrics=lyrics.replace("\n"," ")
-	lyrics=lyrics.replace(",","")
-	lyrics=lyrics.replace("!","")
+	lyrics=lyrics.replace("\n\n","\n").replace("\n"," ").replace(",","").replace("!","")
 	words=lyrics.split()
 	for i in range(len(words)-1):
 		createNodes(words[i], words[i+1])
