@@ -26,20 +26,22 @@ class Graph(object):
             return session.run("MATCH (n)"
                                "DETACH DELETE n")
     @staticmethod
-    def create_Nodes(tx, word, next_Word):
+    def create_Nodes(tx, lyricsWord1, lyricsWord2):
         result = tx.run('''
-            MERGE (lx:lyrics{word:$word})
-            	ON CREATE SET lx.word = $word
+        	UNWIND $lyricsWord1 AS word1
+        	UNWIND $lyricsWord2 AS word2
+            MERGE (lx:lyrics{word:word1})
+            	ON CREATE SET lx.word = word1
                 ON CREATE SET lx.count = 1
                 ON MATCH SET lx.count = lx.count + 1
-            MERGE (mx:lyrics{word:$next_Word})
-                ON CREATE SET mx.word = $word
+            MERGE (mx:lyrics{word:word2})
+                ON CREATE SET mx.word = word2
                 ON CREATE SET mx.count = 1
                 ON MATCH SET mx.count = mx.count + 1
             MERGE (lx)-[r:next]->(mx)
                 ON CREATE SET r.count = 1
                 ON MATCH SET r.count = r.count +1
-            RETURN $word, $next_Word''', word=word, next_Word=next_Word)
+            RETURN word1, word2''', lyricsWord1=lyricsWord1, lyricsWord2=lyricsWord2)
         return result
 
 import json, requests
@@ -69,9 +71,9 @@ def get_Lyrics_From_Track_ID(track_id):
 	parameters = "&track_id=" + str(track_id)
 	return call_API(method, parameters)
 
-def create_Nodes(word, next_Word):
+def create_Nodes(lyricsWord1, lyricsWord2):
         with graph._driver.session() as session:
-            greeting = session.write_transaction(graph.create_Nodes, word, next_Word)
+            greeting = session.write_transaction(graph.create_Nodes, lyricsWord1, lyricsWord2)
             print(greeting)
 
 
@@ -90,7 +92,7 @@ for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
             "track_id": dictionary[1]["track_id"],
             "first_release_date": parse_And_Readable(dictionary[1]["first_release_date"]),
             "artist_name": dictionary[1]["track_name"],
-            "lyrics": lyrics["message"]["body"]["lyrics"]["lyrics_body"]
+#            "lyrics": lyrics["message"]["body"]["lyrics"]["lyrics_body"]
         }
 
 all_Tracks_Lyrics_For_Graph={}
@@ -111,8 +113,7 @@ for key in all_Tracks_Lyrics_For_Graph:
 		lyrics = before + after
 	lyrics=lyrics.replace("\n\n","\n").replace("\n"," ").replace(",","").replace("!","")
 	words=lyrics.split()
-	for i in range(len(words)-1):
-		create_Nodes(words[i], words[i+1])
+	create_Nodes(words[1:], words[:-1])
 	print(song_Name+" lyrics added to the graph")
 	paradigmatic_Query='''
 	MATCH (s:lyrics)
