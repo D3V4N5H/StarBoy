@@ -16,39 +16,40 @@ remove_Lyrics_Label='''
 	'''
 
 class Graph(object):
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))    
-    def close(self):
-        self._driver.close()
-    @staticmethod
-    def clear_Graph():
-        with graph._driver.session() as session:
-            return session.run("MATCH (n)"
-                               "DETACH DELETE n")
-    @staticmethod
-    def create_Nodes(tx, lyricsWord1, lyricsWord2):
-        result = tx.run('''
-        	UNWIND $lyricsWord1 AS word1
-        	UNWIND $lyricsWord2 AS word2
-            MERGE (lx:lyrics{word:word1})
-            	ON CREATE SET lx.word = word1
-                ON CREATE SET lx.count = 1
-                ON MATCH SET lx.count = lx.count + 1
-            MERGE (mx:lyrics{word:word2})
-                ON CREATE SET mx.word = word2
-                ON CREATE SET mx.count = 1
-                ON MATCH SET mx.count = mx.count + 1
-            MERGE (lx)-[r:next]->(mx)
-                ON CREATE SET r.count = 1
-                ON MATCH SET r.count = r.count +1
-            RETURN word1, word2''', lyricsWord1=lyricsWord1, lyricsWord2=lyricsWord2)
-        return result
+	def __init__(self, uri, user, password):
+		self._driver = GraphDatabase.driver(uri, auth=(user, password))	
+	def close(self):
+		self._driver.close()
+	@staticmethod
+	def clear_Graph():
+		with graph._driver.session() as session:
+			return session.run("MATCH (n)"
+							   "DETACH DELETE n")
+	@staticmethod
+	def create_Nodes(tx, lyricsWord1, lyricsWord2):
+		result = tx.run('''
+			UNWIND $lyricsWord1 AS word1
+			UNWIND $lyricsWord2 AS word2
+			MERGE (lx:lyrics{word:word1})
+				ON CREATE SET lx.word = word1
+				ON CREATE SET lx.count = 1
+				ON MATCH SET lx.count = lx.count + 1
+			MERGE (mx:lyrics{word:word2})
+				ON CREATE SET mx.word = word2
+				ON CREATE SET mx.count = 1
+				ON MATCH SET mx.count = mx.count + 1
+			MERGE (lx)-[r:next]->(mx)
+				ON CREATE SET r.count = 1
+				ON MATCH SET r.count = r.count +1
+			RETURN word1, word2''', lyricsWord1=lyricsWord1, lyricsWord2=lyricsWord2)
+		return result
+
 
 import json, requests
 def call_API(method, parameters):
-    response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + api_key ).text
-    callback_To_Json = response.replace( "callback(" , "").replace( ");" , "" )
-    return json.loads(callback_To_Json)
+	response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + api_key ).text
+	callback_To_Json = response.replace( "callback(" , "").replace( ");" , "" )
+	return json.loads(callback_To_Json)
 
 def get_Lyrics(track_Name, artist_Name):
 	method = "matcher.lyrics.get"
@@ -63,8 +64,8 @@ from urllib.parse import quote as encode
 from dateutil.parser import parse
 
 def parse_And_Readable(weird_Date_And_Time):
-    date_Time_Object = parse(weird_Date_And_Time)
-    return date_Time_Object.date().strftime("%d %B, %Y (%A)")
+	date_Time_Object = parse(weird_Date_And_Time)
+	return date_Time_Object.date().strftime("%d %B, %Y (%A)")
 
 def get_Lyrics_From_Track_ID(track_id):
 	method = "track.lyrics.get"
@@ -72,9 +73,9 @@ def get_Lyrics_From_Track_ID(track_id):
 	return call_API(method, parameters)
 
 def create_Nodes(lyricsWord1, lyricsWord2):
-        with graph._driver.session() as session:
-            greeting = session.write_transaction(graph.create_Nodes, lyricsWord1, lyricsWord2)
-            print(greeting)
+		with graph._driver.session() as session:
+			greeting = session.write_transaction(graph.create_Nodes, lyricsWord1, lyricsWord2)
+			print(greeting)
 
 
 graph = Graph(uri, user, password)
@@ -85,20 +86,20 @@ parameters = "&country=in"
 top_Tracks_India_Data = call_API(method,parameters)
 list_Of_Tracks = {}
 for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
-    for dictionary in track_Dictionary.items():
-        lyrics = get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])
-        list_Of_Tracks[ dictionary[1]["track_name"]] = \
-        {
-            "track_id": dictionary[1]["track_id"],
-            "first_release_date": parse_And_Readable(dictionary[1]["first_release_date"]),
-            "artist_name": dictionary[1]["track_name"],
-#            "lyrics": lyrics["message"]["body"]["lyrics"]["lyrics_body"]
-        }
+	for dictionary in track_Dictionary.items():
+		lyrics = get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])
+		list_Of_Tracks[ dictionary[1]["track_name"]] = \
+		{
+			"track_id": dictionary[1]["track_id"],
+			"first_release_date": parse_And_Readable(dictionary[1]["first_release_date"]),
+			"artist_name": dictionary[1]["track_name"],
+#			"lyrics": lyrics["message"]["body"]["lyrics"]["lyrics_body"]
+		}
 
 all_Tracks_Lyrics_For_Graph={}
 for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
-    for dictionary in track_Dictionary.items():
-        all_Tracks_Lyrics_For_Graph[dictionary[1]["track_id"]] = get_Lyrics_From_Track_ID(dictionary[1]["track_id"])
+	for dictionary in track_Dictionary.items():
+		all_Tracks_Lyrics_For_Graph[dictionary[1]["track_id"]] = get_Lyrics_From_Track_ID(dictionary[1]["track_id"])
 
 
 for key in all_Tracks_Lyrics_For_Graph:
@@ -144,13 +145,19 @@ for key in all_Tracks_Lyrics_For_Graph:
 	CREATE UNIQUE (s)-[r:RELATED_TO]->(o) SET r.paradig = sim;
 	'''
 	with graph._driver.session() as session:
-	    session.run(paradigmatic_Query,song_Name=song_Name)
-	paradigmatic_Query_Response='''MATCH (s:lyrics)-[r:RELATED_TO]->(o:lyrics) RETURN s.word,o.word,r.paradig AS sim ORDER BY sim DESC;'''
+		session.run(paradigmatic_Query,song_Name=song_Name)
 	with graph._driver.session() as session:
-	    weighted_Keywords=session.run(paradigmatic_Query_Response)
+		weighted_Keywords=session.write_transaction(get_Weighted_Keywords_From_Mined_Graph)
 	with graph._driver.session() as session:
 		session.run(add_Song_Name_As_Label,song_Name=song_Name)
 	with graph._driver.session() as session:
 		session.run(remove_Lyrics_Label)
 	print(song_Name+" MINED FOR PARADIGMATIC SIMILARITY USING JACCARD INDEX")
 	print(weighted_Keywords)
+
+def get_Weighted_Keywords_From_Mined_Graph(tx):
+	result = tx.run('''MATCH (s:lyrics)-[r:RELATED_TO]->(o:lyrics) RETURN s.word,o.word,r.paradig AS sim ORDER BY sim DESC;''')
+	return result.Single()[0]
+
+with graph._driver.session() as session:
+	weighted_Keywords=session.write_transaction(get_Weighted_Keywords_From_Mined_Graph)
