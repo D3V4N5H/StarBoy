@@ -155,9 +155,10 @@ for key in all_Tracks_Lyrics_For_Graph:
 	print(song_Name+" MINED FOR PARADIGMATIC SIMILARITY USING JACCARD INDEX")
 	print(weighted_Keywords)
 
+@staticmethod
 def get_Weighted_Keywords_From_Mined_Graph(tx):
-	result = tx.run('''MATCH (s:lyrics)-[r:RELATED_TO]->(o:lyrics) RETURN s.word,o.word,r.paradig AS sim ORDER BY sim DESC;''')
-	return result.Single()[0]
+	result = tx.run('''MATCH (s:lyrics)-[r:RELATED_TO]->(o:lyrics) RETURN s.word''')
+	return [record["keys"] for record in result]
 
 with graph._driver.session() as session:
-	weighted_Keywords=session.write_transaction(get_Weighted_Keywords_From_Mined_Graph)
+	weighted_Keywords=session.read_transaction(get_Weighted_Keywords_From_Mined_Graph)
