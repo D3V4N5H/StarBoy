@@ -17,20 +17,19 @@ class Graph(object):
 	@staticmethod
 	def create_Nodes(tx, lyricsWord1, lyricsWord2):
 		result = tx.run('''
-			UNWIND $lyricsWord1 AS word1
-			UNWIND $lyricsWord2 AS word2
-			MERGE (lx:lyrics{word:word1})
-				ON CREATE SET lx.word = word1
+			LOAD CSV FROM "file:///starboyExportedLyrics.csv" AS line
+			FIELDTERMINATOR ' '
+			FOREACH (w IN RANGE(0, SIZE(line)-2) | 
+			MERGE (lx:lyrics{word:line[w]})
 				ON CREATE SET lx.count = 1
 				ON MATCH SET lx.count = lx.count + 1
-			MERGE (mx:lyrics{word:word2})
-				ON CREATE SET mx.word = word2
+			MERGE (mx:lyrics{word:line[w+1]})
 				ON CREATE SET mx.count = 1
-				ON MATCH SET mx.count = mx.count + 1
+				ON MATCH SET mx.count = mx.count + (case when w = SIZE(line)-2 then 1 else 0 end)
 			MERGE (lx)-[r:next]->(mx)
 				ON CREATE SET r.count = 1
-				ON MATCH SET r.count = r.count +1
-			RETURN word1, word2''', lyricsWord1=lyricsWord1, lyricsWord2=lyricsWord2)
+				ON MATCH SET r.count = r.count +1)
+			RETURN line''')
 		return result
 	@staticmethod
 	def listWordFreq(driver):
@@ -110,10 +109,16 @@ while "(" in lyrics and ")" in lyrics:
 	before, rest = lyrics.split("(",maxsplit=1)
 	inside, after = rest.split(")",maxsplit=1)
 	lyrics = before + after
-lyrics = lyrics.replace("\n\n","\n").replace("\n"," ").replace(",","").replace("!","")
-words=lyrics.split()
-create_Nodes(words[1:], words[:-1])
+lyrics=lyrics.replace("\n\n","\n").replace("\n"," ").replace(",","").replace("!","")
+
+import csv
+with open (r'starboyExportedLyrics.csv', 'w', newline='') as write_file:
+    write=csv.writer(write_file, delimiter='\n')
+    write.writerows(lyrics)
+
+# create_Nodes(words[1:], words[:-1])
 print("Starboy lyrics added to the graph")
+
 
 paradigmatic_Query='''
 // Mining Paradigmatic Word Associations using Jaccard Index to compute similarity
@@ -151,13 +156,11 @@ CREATE UNIQUE (s)-[r:RELATED_TO]->(o) SET r.paradig = sim;
 # 		# print(record["s.word"], record["o.word"], record["sim"])
 # 		list_Of_Tracks[song_Name]["jaccard"].append({tuple([record["s.word"], record["o.word"]]): record["r.paradig"]})
 
-with graph._driver.session() as session:
-	 session.run(paradigmatic_Query)
+# with graph._driver.session() as session:
+	 # session.run(paradigmatic_Query)
 # with graph._driver.session() as session:
 # 	 session.read_transaction(paradigmatic_Query_Response_Function)
 
-print("Starboy MINED FOR PARADIGMATIC SIMILARITY USING JACCARD INDEX")
-
-print(words)
+# print("Starboy MINED FOR PARADIGMATIC SIMILARITY USING JACCARD INDEX")
 
 graph.close()
