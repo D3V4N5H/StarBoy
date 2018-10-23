@@ -15,7 +15,7 @@ class Graph(object):
 			return session.run("MATCH (n)"
 							   "DETACH DELETE n")
 	@staticmethod
-	def create_Nodes(tx, lyricsWord1, lyricsWord2):
+	def create_Nodes(tx):
 		result = tx.run('''
 			LOAD CSV FROM "file:///starboyExportedLyrics.csv" AS line
 			FIELDTERMINATOR ' '
@@ -98,9 +98,9 @@ def get_Lyrics_From_Track_ID(track_id):
 
 #Mining
 
-def create_Nodes(lyricsWord1, lyricsWord2):
+def create_Nodes():
 		with graph._driver.session() as session:
-			session.write_transaction(graph.create_Nodes, lyricsWord1, lyricsWord2)
+			session.write_transaction(graph.create_Nodes)
 
 fetchedLyrics = get_Lyrics_From_Track_ID(115237681)
 lyrics, disclaimer = fetchedLyrics["message"]["body"]["lyrics"]["lyrics_body"].split("...\n\n*******")
@@ -109,14 +109,13 @@ while "(" in lyrics and ")" in lyrics:
 	before, rest = lyrics.split("(",maxsplit=1)
 	inside, after = rest.split(")",maxsplit=1)
 	lyrics = before + after
-lyrics=lyrics.replace("\n\n","\n").replace("\n"," ").replace(",","").replace("!","")
-
+lyrics = lyrics.replace("\n\n","\n").replace(",","").replace("!","") #.replace("\n"," ")
+lyricsLine = lyrics.split("\n")
 import csv
-with open (r'starboyExportedLyrics.csv', 'w', newline='') as write_file:
-    write=csv.writer(write_file, delimiter='\n')
-    write.writerows(lyrics)
+with open (r'starboyExportedLyrics.csv', 'wb') as write_file:
+	write=csv.writer(write_file)
+	write.writerows([r] for r in lyricsLine)
 
-# create_Nodes(words[1:], words[:-1])
 print("Starboy lyrics added to the graph")
 
 
