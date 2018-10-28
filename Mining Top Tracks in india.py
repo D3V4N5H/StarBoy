@@ -14,6 +14,8 @@ def call_API(method, parameters):
     callback_To_Json = response.replace( "callback(" , "").replace( ");" , "" )
     return json.loads(callback_To_Json)
 
+
+from urllib.parse import quote as encode
 def get_Lyrics(track_Name, artist_Name):
 	method = "matcher.lyrics.get"
 	title = "&q_track="
@@ -23,7 +25,7 @@ def get_Lyrics(track_Name, artist_Name):
 	parameters = title + _title + artist + _artist
 	return call_API(method,parameters)
 
-from urllib.parse import quote as encode
+
 from dateutil.parser import parse
 
 def parse_And_Readable(weird_Date_And_Time):
@@ -76,7 +78,7 @@ CREATE UNIQUE (s)-[r:RELATED_TO]->(o) SET r.paradig = sim;
 '''
 
 def create_Nodes_Query_Fn(song_Name):
-	return '''LOAD CSV FROM "file:///''' + song_Name + '''.csv" AS line
+	return '''LOAD CSV FROM "file:///''' + encode(song_Name) + '''.csv" AS line
 				FIELDTERMINATOR ' '
 				FOREACH (w IN RANGE(0, SIZE(line)-2) | 
 				MERGE (lx:lyrics{word:line[w]})
