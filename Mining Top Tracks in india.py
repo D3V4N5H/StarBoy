@@ -78,7 +78,7 @@ CREATE UNIQUE (s)-[r:RELATED_TO]->(o) SET r.paradig = sim;
 '''
 
 def create_Nodes_Query_Fn(song_Name):
-	return '''LOAD CSV FROM "file:///''' + encode(song_Name) + '''.csv" AS line
+	return '''LOAD CSV FROM "file:///''' + song_Name + '''.csv" AS line
 				FIELDTERMINATOR ' '
 				FOREACH (w IN RANGE(0, SIZE(line)-2) | 
 				MERGE (lx:lyrics{word:line[w]})
@@ -149,7 +149,7 @@ for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
 for key in all_Tracks_Lyrics_For_Graph:
 	for name, values in list_Of_Tracks.items():
 		if values["track_id"] == key:
-			song_Name = name
+			song_Name = name.replace(" ","")
 	fetchedLyrics = all_Tracks_Lyrics_For_Graph[key]["message"]["body"]["lyrics"]["lyrics_body"]
 	lyrics, disclaimer = fetchedLyrics.split("...\n\n*******")
 	while ("(" in lyrics and ")" in lyrics):
