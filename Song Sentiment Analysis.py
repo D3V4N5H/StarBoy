@@ -1,3 +1,4 @@
+
 from textblob import TextBlob
 
 import json, requests
@@ -17,6 +18,10 @@ def get_Lyrics(track_Name, artist_Name):
 	parameters = title + _title + artist + _artist
 	return call_API(method,parameters)
 
+def infer_Sentiment(polarity):
+	percentage = str(int(round(polarity,2)*100))+"% "
+	return percentage+"Happy" if polarity > 0 else percentage+"Sad"
+
 method = "chart.tracks.get"
 parameters = "&country=in"
 top_Tracks_India_Data = call_API(method,parameters)
@@ -24,23 +29,28 @@ list_Of_Tracks = {}
 
 for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
 	for dictionary in track_Dictionary.items():
-		fetchedLyrics = get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])["message"]["body"]["lyrics"]["lyrics_body"]
-		lyrics, disclaimer = fetchedLyrics.split("...\n\n*******")
-		while ("(" in lyrics and ")" in lyrics):
-			before, rest = lyrics.split("(",maxsplit=1)
-			inside, after = rest.split(")",maxsplit=1)
-			lyrics = before + after
-		while ("\n\n" in lyrics):
-			lyrics = lyrics.replace("\n\n","\n")
-		lyrics=lyrics.replace(",","").replace("!","")		
-		list_Of_Tracks[ dictionary[1]["track_name"]] = {"track_id": dictionary[1]["track_id"], "lyrics": lyrics, "sentiment": blob.sentiment.polarity}
+		if isinstance(get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])["message"]["body"], dict):
+			fetchedLyrics = get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])["message"]["body"]["lyrics"]["lyrics_body"]
+			lyrics, disclaimer = fetchedLyrics.split("...\n\n*******")
+			while ("(" in lyrics and ")" in lyrics):
+				before, rest = lyrics.split("(",maxsplit=1)
+				inside, after = rest.split(")",maxsplit=1)
+				lyrics = before + after
+			while ("\n\n" in lyrics):
+				lyrics = lyrics.replace("\n\n","\n")
+			lyrics=lyrics.replace(",","").replace("!","")		
+			list_Of_Tracks[ dictionary[1]["track_name"]] = {"track_id": dictionary[1]["track_id"], "lyrics": lyrics}
 
 for track in list_Of_Tracks:
 	lyrics=list_Of_Tracks[track]["lyrics"]
 	blob=TextBlob(lyrics)
-	print("Song: ", track)
-	print("Sentiment:", blob.sentiment.polarity, "\n")
-	print(blob.noun_phrases)
-	for sentence in blob.sentences:
-		print(sentence)
-		print(sentence.sentiment.polarity, "\n")
+	if blob.sentiment.polarity!=0:
+		print("\n\nSong: ", track)
+		print("Sentiment:", infer_Sentiment(blob.sentiment.polarity), "\n")
+		# print(blob.noun_phrases)
+		sentences = lyrics.split("\n")
+		for sentence in sentences:
+			sentence_Blob=TextBlob(sentence)
+			if sentence_Blob.sentiment.polarity!=0:
+				print(sentence)
+				print(infer_Sentiment(sentence_Blob.sentiment.polarity))
