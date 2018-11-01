@@ -43,7 +43,7 @@ for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
 
 for track in list_Of_Tracks:
 	lyrics=list_Of_Tracks[track]["lyrics"]
-	blob=TextBlob(lyrics)
+	blob=TextBlob(lyrics.replace("\n"," "))
 	if blob.sentiment.polarity!=0:
 		print("\n\nSong: ", track)
 		print("Sentiment:", infer_Sentiment(blob.sentiment.polarity), "\n")
@@ -54,3 +54,15 @@ for track in list_Of_Tracks:
 			if sentence_Blob.sentiment.polarity!=0:
 				print(sentence)
 				print(infer_Sentiment(sentence_Blob.sentiment.polarity))
+
+#PseudoCode
+# import nltk
+# >>> text = nltk.tokenize.word_tokenize("I can tag you or you can add the tag yourself")
+# >>> for tag in nltk.pos_tag(text):
+# ...     print(tag)
+# >>> for t in list_Of_Tracks:
+# ...     print(t)
+# >>> list_Of_Tracks["Putt Jatt Da"]["lyrics"].replace("\n"," ")
+# >>> for line in list_Of_Tracks["Putt Jatt Da"]["lyrics"].split("\n"):
+# ...     print(line)
+# >>> TextBlob(list_Of_Tracks["Putt Jatt Da"]["lyrics"].replace("\n"," ")).detect_language()
