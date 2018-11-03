@@ -44,25 +44,21 @@ for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
 			list_Of_Tracks[ dictionary[1]["track_name"]] = {"track_id": dictionary[1]["track_id"], "lyrics": lyrics, "language": language}
 
 for track in list_Of_Tracks:
+	lyrics=list_Of_Tracks[track]["lyrics"]
 	languageAccordingToAPI = list_Of_Tracks[track]["language"]
-	languageAccordingToAI = TextBlob(list_Of_Tracks[track]["lyrics"].replace("\n"," ")).detect_language()
-	if languageAccordingToAPI!='':
-		print("\nSong:", track)
-		print("Language According To API:", languageAccordingToAPI)
-		print("Language According To AI:", languageAccordingToAI)
-# for track in list_Of_Tracks:
-# 	lyrics=list_Of_Tracks[track]["lyrics"]
-# 	blob=TextBlob(lyrics.replace("\n"," "))
-# 	if blob.sentiment.polarity!=0:
-# 		print("\n\nSong: ", track)
-# 		print("Sentiment:", infer_Sentiment(blob.sentiment.polarity), "\n")
-# 		# print(blob.noun_phrases)
-# 		sentences = lyrics.split("\n")
-# 		for sentence in sentences:
-# 			sentence_Blob=TextBlob(sentence)
-# 			if sentence_Blob.sentiment.polarity!=0:
-# 				print(sentence)
-# 				print(infer_Sentiment(sentence_Blob.sentiment.polarity))
+	languageAccordingToAI = TextBlob(lyrics.replace("\n"," ")).detect_language()
+	if languageAccordingToAPI=='en' and languageAccordingToAI=='en':
+		blob=TextBlob(lyrics.replace("\n"," "))
+		if blob.sentiment.polarity!=0:
+			print("\n\nSong: ", track)
+			print("Sentiment:", infer_Sentiment(blob.sentiment.polarity), "\n")
+			# print(blob.noun_phrases)
+			sentences = lyrics.split("\n")
+			for sentence in sentences:
+				sentence_Blob=TextBlob(sentence)
+				if sentence_Blob.sentiment.polarity!=0:
+					print(sentence)
+					print(infer_Sentiment(sentence_Blob.sentiment.polarity))
 
 #PseudoCode
 # import nltk
