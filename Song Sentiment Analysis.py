@@ -19,8 +19,14 @@ def get_Lyrics(track_Name, artist_Name):
 	return call_API(method,parameters)
 
 def infer_Sentiment(polarity):
-	percentage = str(int(round(polarity,2)*100))+"% "
-	return percentage+"Happy" if polarity > 0 else percentage+"Sad"
+	percentage = int(polarity*100)
+	return "Pattern Analyzer Sentiment: "+str(percentage)+"% Happy 😀" if polarity > 0 else "\t"*6+"Pattern Analyzer Sentiment: "+str(abs(percentage))+"% Sad ☹️"
+
+def infer_NaiveBayes_Sentiment(sentimentObject):
+	if sentimentObject.classification == 'pos':
+		return "Naive Bayes Sentiment: "+str(int(sentimentObject.p_pos*100)) + "% Happy 😀"
+	else:
+		return "\t"*6+"Naive Bayes Sentiment: "+str(abs(int(sentimentObject.p_neg*100))) + "% Sad ☹️"
 
 method = "chart.tracks.get"
 parameters = "&country=in"
@@ -43,22 +49,29 @@ for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
 			lyrics=lyrics.replace(",","").replace("!","")		
 			list_Of_Tracks[ dictionary[1]["track_name"]] = {"track_id": dictionary[1]["track_id"], "lyrics": lyrics, "language": language}
 
+
+from textblob.sentiments import NaiveBayesAnalyzer
+
 for track in list_Of_Tracks:
 	lyrics=list_Of_Tracks[track]["lyrics"]
 	languageAccordingToAPI = list_Of_Tracks[track]["language"]
 	languageAccordingToAI = TextBlob(lyrics.replace("\n"," ")).detect_language()
 	if languageAccordingToAPI=='en' and languageAccordingToAI=='en':
 		blob=TextBlob(lyrics.replace("\n"," "))
+		Naive_Bayes_blob=TextBlob(lyrics.replace("\n"," "), analyzer=NaiveBayesAnalyzer())
 		if blob.sentiment.polarity!=0:
 			print("\n\nSong: ", track)
-			print("Sentiment:", infer_Sentiment(blob.sentiment.polarity), "\n")
-			# print(blob.noun_phrases)
-			sentences = lyrics.split("\n")
-			for sentence in sentences:
-				sentence_Blob=TextBlob(sentence)
-				if sentence_Blob.sentiment.polarity!=0:
-					print(sentence)
-					print(infer_Sentiment(sentence_Blob.sentiment.polarity))
+			print(infer_Sentiment(blob.sentiment.polarity))
+			print(infer_NaiveBayes_Sentiment(Naive_Bayes_blob.sentiment), "\n")
+			# print("\n\tPhrases:\n\t", blob.noun_phrases,"\n\n")
+			# sentences = lyrics.split("\n")
+			# for sentence in sentences:
+			# 	sentence_Blob=TextBlob(sentence)
+			# 	Naive_Bayes_sentence_Blob=TextBlob(sentence, analyzer=NaiveBayesAnalyzer())
+			# 	if sentence_Blob.sentiment.polarity!=0:
+			# 		print("\n", sentence)
+			# 		print(infer_Sentiment(sentence_Blob.sentiment.polarity))
+			# 		print(infer_NaiveBayes_Sentiment(Naive_Bayes_sentence_Blob.sentiment))
 
 #PseudoCode
 # import nltk
