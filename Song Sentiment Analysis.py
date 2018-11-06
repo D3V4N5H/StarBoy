@@ -7,7 +7,6 @@ def call_API(method, parameters):
 	callback_To_Json = response.replace( "callback(" , "").replace( ");" , "" )
 	return json.loads(callback_To_Json)
 
-
 from urllib.parse import quote as encode
 def get_Lyrics(track_Name, artist_Name):
 	method = "matcher.lyrics.get"
@@ -27,6 +26,8 @@ def infer_NaiveBayes_Sentiment(sentimentObject):
 		return "Naive Bayes Sentiment: "+str(int(sentimentObject.p_pos*100)) + "% Happy 😀"
 	else:
 		return "\t"*6+"Naive Bayes Sentiment: "+str(abs(int(sentimentObject.p_neg*100))) + "% Sad ☹️"
+
+IBM_url="https://gateway.watsonplatform.net/natural-language-understanding/api"
 
 method = "chart.tracks.get"
 parameters = "&country=in"
@@ -64,14 +65,14 @@ for track in list_Of_Tracks:
 			print(infer_Sentiment(blob.sentiment.polarity))
 			print(infer_NaiveBayes_Sentiment(Naive_Bayes_blob.sentiment), "\n")
 			# print("\n\tPhrases:\n\t", blob.noun_phrases,"\n\n")
-			# sentences = lyrics.split("\n")
-			# for sentence in sentences:
-			# 	sentence_Blob=TextBlob(sentence)
-			# 	Naive_Bayes_sentence_Blob=TextBlob(sentence, analyzer=NaiveBayesAnalyzer())
-			# 	if sentence_Blob.sentiment.polarity!=0:
-			# 		print("\n", sentence)
-			# 		print(infer_Sentiment(sentence_Blob.sentiment.polarity))
-			# 		print(infer_NaiveBayes_Sentiment(Naive_Bayes_sentence_Blob.sentiment))
+			sentences = lyrics.split("\n")
+			for sentence in sentences:
+				sentence_Blob=TextBlob(sentence)
+				Naive_Bayes_sentence_Blob=TextBlob(sentence, analyzer=NaiveBayesAnalyzer())
+				if sentence_Blob.sentiment.polarity!=0:
+					print("\n☞", sentence)
+					print(infer_Sentiment(sentence_Blob.sentiment.polarity))
+					print(infer_NaiveBayes_Sentiment(Naive_Bayes_sentence_Blob.sentiment))
 
 #PseudoCode
 # import nltk
