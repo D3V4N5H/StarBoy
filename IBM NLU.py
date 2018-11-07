@@ -1,7 +1,7 @@
 from __future__ import print_function
 import json
 from watson_developer_cloud import NaturalLanguageUnderstandingV1
-from watson_developer_cloud.natural_language_understanding_v1 import Features, EntitiesOptions, KeywordsOptions
+from watson_developer_cloud.natural_language_understanding_v1 import Features, EntitiesOptions, KeywordsOptions, CategoriesOptions, ConceptsOptions, EmotionOptions
 
 service = NaturalLanguageUnderstandingV1(version='2018-03-16',url='https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2018-03-19',username=IBM_api_username,password=IBM_api_password)
 
@@ -22,7 +22,12 @@ response = service.analyze(
 	"You talking 'bout me I don't see a shade "
 	'Switch up my style I take any lane '
 	'I switch up my cup I kill any pain ',
-	features=Features(entities=EntitiesOptions(),
-					  keywords=KeywordsOptions())).get_result()
+	features=Features(	emotion=EmotionOptions()
+						# concepts=ConceptsOptions(limit=10),
+						# categories=CategoriesOptions(),
+						# entities=EntitiesOptions(),
+						# keywords=KeywordsOptions(),
 
+						 ) ).get_result()
+ 
 print(json.dumps(response, indent=2))
