@@ -1,5 +1,11 @@
+from __future__ import print_function
 
+import json
+from watson_developer_cloud import NaturalLanguageUnderstandingV1
+from watson_developer_cloud.natural_language_understanding_v1 import Features, EntitiesOptions, KeywordsOptions, CategoriesOptions, ConceptsOptions, EmotionOptions
 from textblob import TextBlob
+
+service = NaturalLanguageUnderstandingV1(version='2018-03-16',url='https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2018-03-19',username=IBM_api_username,password=IBM_api_password)
 
 import json, requests
 def call_API(method, parameters):
@@ -18,14 +24,18 @@ def get_Lyrics(track_Name, artist_Name):
 	return call_API(method,parameters)
 
 def infer_Sentiment(polarity):
-	percentage = int(polarity*100)
+	percentage = round(polarity*100,2)
 	return "Pattern Analyzer Sentiment: "+str(percentage)+"% Happy 😀" if polarity > 0 else "\t"*6+"Pattern Analyzer Sentiment: "+str(abs(percentage))+"% Sad ☹️"
 
 def infer_NaiveBayes_Sentiment(sentimentObject):
 	if sentimentObject.classification == 'pos':
-		return "Naive Bayes Sentiment: "+str(int(sentimentObject.p_pos*100)) + "% Happy 😀"
+		return "Naive Bayes Sentiment: "+str(round(sentimentObject.p_pos*100,2)) + "% Happy 😀"
 	else:
-		return "\t"*6+"Naive Bayes Sentiment: "+str(abs(int(sentimentObject.p_neg*100))) + "% Sad ☹️"
+		return "\t"*6+"Naive Bayes Sentiment: "+str(abs(round(sentimentObject.p_neg*100,2))) + "% Sad ☹️"
+
+def infer_IBM_Watson_Emotions(response):
+	emotion_Dictionary=response['emotion']['document']['emotion']
+	return '\t'*2+'IBM Watson 🧠 Sadness: '+str(round(emotion_Dictionary['sadness']*100,2))+'%  Joy: '+str(round(emotion_Dictionary['joy']*100,2))+'%'
 
 IBM_url="https://gateway.watsonplatform.net/natural-language-understanding/api"
 
@@ -61,18 +71,26 @@ for track in list_Of_Tracks:
 		blob=TextBlob(lyrics.replace("\n"," "))
 		Naive_Bayes_blob=TextBlob(lyrics.replace("\n"," "), analyzer=NaiveBayesAnalyzer())
 		if blob.sentiment.polarity!=0:
-			print("\n\nSong: ", track)
+			print("\n\nSong: ", track,"\n")
 			print(infer_Sentiment(blob.sentiment.polarity))
 			print(infer_NaiveBayes_Sentiment(Naive_Bayes_blob.sentiment), "\n")
+			if blob.sentiment.polarity>0 and Naive_Bayes_blob.sentiment.classification=='neg' or blob.sentiment.polarity<0 and Naive_Bayes_blob.sentiment.classification=='pos':
+				print(infer_IBM_Watson_Emotions(service.analyze( text=lyrics.replace("\n"," "), features=Features(emotion=EmotionOptions()) ).get_result()))
 			# print("\n\tPhrases:\n\t", blob.noun_phrases,"\n\n")
 			sentences = lyrics.split("\n")
 			for sentence in sentences:
 				sentence_Blob=TextBlob(sentence)
 				Naive_Bayes_sentence_Blob=TextBlob(sentence, analyzer=NaiveBayesAnalyzer())
 				if sentence_Blob.sentiment.polarity!=0:
-					print("\n☞", sentence)
-					print(infer_Sentiment(sentence_Blob.sentiment.polarity))
-					print(infer_NaiveBayes_Sentiment(Naive_Bayes_sentence_Blob.sentiment))
+					sentiment_According_To_PA=infer_Sentiment(sentence_Blob.sentiment.polarity)
+					sentiment_According_To_NB=infer_NaiveBayes_Sentiment(Naive_Bayes_sentence_Blob.sentiment)
+					if sentence_Blob.sentiment.polarity>0 and Naive_Bayes_sentence_Blob.sentiment.classification=='neg' or sentence_Blob.sentiment.polarity<0 and Naive_Bayes_sentence_Blob.sentiment.classification=='pos' :
+						print("\n\n☞", sentence, "\n")
+						print(sentiment_According_To_PA)
+						print(sentiment_According_To_NB)
+						sentiment_According_To_IBM=infer_IBM_Watson_Emotions(service.analyze( text=sentence, features=Features(emotion=EmotionOptions()) ).get_result())
+						print("\n", sentiment_According_To_IBM)
+
 
 #PseudoCode
 # import nltk
