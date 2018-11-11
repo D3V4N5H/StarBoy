@@ -5,7 +5,6 @@ service = NaturalLanguageUnderstandingV1(version='2018-03-16',url='https://gatew
 
 from textblob import TextBlob
 
-
 import json, requests
 def call_API(method, parameters):
 	response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + api_key ).text
@@ -39,40 +38,60 @@ def infer_IBM_Watson_Emotions(response):
 def get_Genius_Description(song_ID):
 	search_url = genius_Base_Url + '/songs/'+str(song_ID)+'?text_format=plain'
 	response=requests.get(search_url, headers=headers)
-	return response.json()['response']['song']['description']['plain']
+	if response.json()['meta']['status']==200:
+		return response.json()['response']['song']['description']['plain']
 #2851948
 
 def get_Genius_Song_ID(track_Name, artist):
 	query=encode(track_Name+' '+artist)
 	search_url = genius_Base_Url + '/search?q='+query
 	response=requests.get(search_url, headers=headers)
-	return response.json()['response']['hits'][0]['result']['id']
+	if response.json()['response']['hits']!=[]:
+		return response.json()['response']['hits'][0]['result']['id']
 
+from bs4 import BeautifulSoup
+import re
+
+def get_Genius_Song_Url(song_ID):
+	search_url = genius_Base_Url + '/songs/'+str(song_ID)+'?text_format=plain'
+	response=requests.get(search_url, headers=headers)
+	if response.json()['meta']['status']==200:
+		return response.json()['response']['song']['url']
+
+def get_Genius_Lyrics(url):
+	if url:
+		page = requests.get(url)
+		html = BeautifulSoup(page.text, "html.parser")
+		return html.find("div", class_="lyrics").get_text()
 
 IBM_url="https://gateway.watsonplatform.net/natural-language-understanding/api"
 genius_Base_Url = 'https://api.genius.com'
 headers = {'Authorization': 'Bearer ' + bearer}
 
 method = "chart.tracks.get"
-parameters = "&country=in"
+parameters = "&country=us"
 top_Tracks_India_Data = call_API(method,parameters)
 list_Of_Tracks = {}
 
 for track_Dictionary in top_Tracks_India_Data["message"]["body"]["track_list"]:
 	for dictionary in track_Dictionary.items():
-		if isinstance(get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])["message"]["body"], dict):
-			track_Data = get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])
-			language=track_Data["message"]["body"]["lyrics"]["lyrics_language"]
-			fetchedLyrics = track_Data["message"]["body"]["lyrics"]["lyrics_body"]
-			lyrics, disclaimer = fetchedLyrics.split("...\n\n*******")
-			while ("(" in lyrics and ")" in lyrics):
-				before, rest = lyrics.split("(",maxsplit=1)
-				inside, after = rest.split(")",maxsplit=1)
-				lyrics = before + after
+		# if isinstance(get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])["message"]["body"], dict):
+		track_Data = get_Lyrics(dictionary[1]["track_name"], dictionary[1]["artist_name"])
+		language=track_Data["message"]["body"]["lyrics"]["lyrics_language"]
+		lyrics = get_Genius_Lyrics(get_Genius_Song_Url(get_Genius_Song_ID(dictionary[1]["track_name"], dictionary[1]["artist_name"])))
+		# lyrics, disclaimer = fetchedLyrics.split("...\n\n*******")
+		if lyrics:
+		# while ("(" in lyrics and ")" in lyrics):
+		# 	before, rest = lyrics.split("(",maxsplit=1)
+		# 	inside, after = rest.split(")",maxsplit=1)
+		# 	lyrics = before + after
 			while ("\n\n" in lyrics):
 				lyrics = lyrics.replace("\n\n","\n")
-			lyrics=lyrics.replace(",","").replace("!","")		
-			list_Of_Tracks[ dictionary[1]["track_name"]] = {"track_id": dictionary[1]["track_id"], "lyrics": lyrics, "language": language, 'artist_name': dictionary[1]["artist_name"]}
+			lyrics=lyrics.replace(",","").replace("!","")	
+			# print(dictionary[1]["track_name"])
+			# print(dictionary[1]["artist_name"])
+			# print(lyrics)
+			list_Of_Tracks[ dictionary[1]["track_name"] ] = {"track_id": dictionary[1]["track_id"], "lyrics": lyrics, "language": language, 'artist_name': dictionary[1]["artist_name"]}
 
 
 from textblob.sentiments import NaiveBayesAnalyzer
@@ -87,10 +106,10 @@ for track in list_Of_Tracks:
 		Naive_Bayes_blob=TextBlob((lyrics+' '+description).replace("\n"," "), analyzer=NaiveBayesAnalyzer())
 		if blob.sentiment.polarity!=0:
 #Main Code
-			print("\n\nSong: ", track,"\n")
-			print(description)
+			print("\nSong: ", track)
+			# print(description)
 			print(infer_Sentiment(blob.sentiment.polarity))
-			print(infer_NaiveBayes_Sentiment(Naive_Bayes_blob.sentiment), "\n")
+			print(infer_NaiveBayes_Sentiment(Naive_Bayes_blob.sentiment))
 			# if blob.sentiment.polarity>0 and Naive_Bayes_blob.sentiment.classification=='neg' or blob.sentiment.polarity<0 and Naive_Bayes_blob.sentiment.classification=='pos':
 			print(infer_IBM_Watson_Emotions(service.analyze( text=(lyrics+' '+description).replace("\n"," "), features=Features(emotion=EmotionOptions()) ).get_result()))
 			# print("\n\tPhrases:\n\t", blob.noun_phrases,"\n\n")
