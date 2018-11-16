@@ -1,8 +1,12 @@
+import configparser
+config = configparser.ConfigParser()
+config.read('config.txt')
+api_key=config['MusixMatch']['API_key']
 
-from neo4j.v1 import GraphDatabase
-uri = "bolt://localhost:7687"
-user = "neo4j"
-password = "password"
+from neo4j import GraphDatabase
+uri = config['Neo4j']['Bolt_URI']
+user = config['Neo4j']['User']
+password = config['Neo4j']['Password']
 
 class Graph(object):
 	def __init__(self, uri, user, password):
@@ -171,6 +175,6 @@ with graph._driver.session() as session:
 	session.run(paradigmatic_Query)
 	session.read_transaction(paradigmatic_Query_Response_Function)
 
-print("Starboy MINED FOR PARADIGMATIC SIMILARITY USING JACCARD INDEX")
-
+print("Starboy MINED FOR PARADIGMATIC ASSOCIATIONS USING JACCARD INDEX")
+print(paradigmatic_Query_Response_Dictionary)
 # graph.close()
