@@ -1,11 +1,17 @@
+import configparser
+config = configparser.ConfigParser()
+config.read('config.txt')
+apikey=config['MusixMatch']['API_key']
+
 import json
 import requests
 from dateutil.parser import parse
 from urllib.parse import quote as encode
-from neo4j.v1 import GraphDatabase
-uri = "bolt://localhost:7687"
-user = "neo4j"
-password = "password"
+
+from neo4j import GraphDatabase
+uri = config['Neo4j']['Bolt_URI']
+user = config['Neo4j']['User']
+password = config['Neo4j']['Password']
 
 class Graph(object):
     def __init__(self, uri, user, password):
