@@ -1,3 +1,8 @@
+import configparser
+config = configparser.ConfigParser()
+config.read('config.txt')
+apikey=config['MusixMatch']['API_key']
+
 #API
 import json, requests
 def callAPI(method, parameters):
@@ -11,7 +16,7 @@ parameters = "&track_id=115237681"
 TrackLyrics = callAPI(method, parameters)
 
 #Graph
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
 uri = "bolt://localhost:7687"
 user = "neo4j"
 password = "password"
