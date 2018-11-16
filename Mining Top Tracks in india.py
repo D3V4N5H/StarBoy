@@ -1,8 +1,12 @@
+import configparser
+config = configparser.ConfigParser()
+config.read('config.txt')
+api_key=config['MusixMatch']['API_key']
 
-from neo4j.v1 import GraphDatabase
-uri = "bolt://localhost:7687"
-user = "neo4j"
-password = "password"
+from neo4j import GraphDatabase
+uri = config['Neo4j']['Bolt_URI']
+user = config['Neo4j']['User']
+password = config['Neo4j']['Password']
 
 import csv
 import os.path
@@ -87,7 +91,7 @@ def create_Nodes_Query_Fn(song_Name):
 					ON MATCH SET lx.count = lx.count + 1
 				MERGE (mx:lyrics{word:line[w+1]})
 					ON CREATE SET mx.count = 1
-					ON MATCH SET mx.count = mx.count + (case when w = SIZE(line)-2 then 1 else 0 end)
+					ON MATCH SET mx.count = mx.count + 1
 				MERGE (lx)-[r:next]->(mx)
 					ON CREATE SET r.count = 1
 					ON MATCH SET r.count = r.count +1)
