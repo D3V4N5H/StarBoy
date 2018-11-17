@@ -1,23 +1,8 @@
-import configparser
-config = configparser.ConfigParser()
-config.read('config.txt')
-api_key=config['MusixMatch']['API_key']
-
-from neo4j import GraphDatabase
-uri = config['Neo4j']['Bolt_URI']
-user = config['Neo4j']['User']
-password = config['Neo4j']['Password']
-
+from config import *
+from GraphCode import *
+from MusixMatch import *
 import csv
 import os.path
-save_path = '/Users/d3v4n5h/Library/Application Support/Neo4j Desktop/Application/neo4jDatabases/database-25eef966-4d97-4421-9310-903f03421892/installation-3.4.6/import/'
-
-import json, requests
-def call_API(method, parameters):
-    response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + api_key ).text
-    callback_To_Json = response.replace( "callback(" , "").replace( ");" , "" )
-    return json.loads(callback_To_Json)
-
 
 from urllib.parse import quote as encode
 def get_Lyrics(track_Name, artist_Name):
@@ -31,7 +16,6 @@ def get_Lyrics(track_Name, artist_Name):
 
 
 from dateutil.parser import parse
-
 def parse_And_Readable(weird_Date_And_Time):
     date_Time_Object = parse(weird_Date_And_Time)
     return date_Time_Object.date().strftime("%d %B, %Y (%A)")
@@ -80,7 +64,6 @@ WITH 1.0*length(r1_intersect) / length(r1_union) as r1_jaccard,
 WITH s, o, r1_jaccard, l1_jaccard, r1_jaccard + l1_jaccard as sim
 CREATE UNIQUE (s)-[r:RELATED_TO]->(o) SET r.paradig = sim;
 '''
-
 def create_Nodes_Query_Fn(song_Name):
 	return '''LOAD CSV FROM "file:///''' + song_Name + '''.csv" AS line
 				FIELDTERMINATOR ' '
@@ -98,6 +81,13 @@ def create_Nodes_Query_Fn(song_Name):
 				RETURN line
 				'''
 
+@add_method(Graph)
+# @staticmethod
+def create_Nodes(tx, create_Nodes_Query):
+    result = tx.run(create_Nodes_Query)
+    return result
+
+# @add_method(Graph)
 def create_Nodes(create_Nodes_Query):
         with graph._driver.session() as session:
             session.write_transaction(graph.create_Nodes, create_Nodes_Query)
@@ -109,24 +99,20 @@ def paradigmatic_Query_Response_Function(tx):
 		list_Of_Tracks[song_Name]["jaccard"].append({tuple([record["s.word"], record["o.word"]]): record["r.paradig"]})
 
 
-class Graph(object):
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))    
-    def close(self):
-        self._driver.close()
-    @staticmethod
-    def clear_Graph():
-        with graph._driver.session() as session:
-            return session.run("MATCH (n)"
-                               "DETACH DELETE n")
-    @staticmethod
-    def create_Nodes(tx, create_Nodes_Query):
-        result = tx.run(create_Nodes_Query)
-        return result
+# class Graph(object):
+#     def __init__(self, uri, user, password):
+#         self._driver = GraphDatabase.driver(uri, auth=(user, password))    
+#     def close(self):
+#         self._driver.close()
+#     @staticmethod
+def clear_Graph():
+    with graph._driver.session() as session:
+        return session.run("MATCH (n)"
+                           "DETACH DELETE n")
 
 
-graph = Graph(uri, user, password)
-graph.clear_Graph()
+graph = Graph(Neo4j_Bolt_URI, Neo4j_User, Neo4j_Password)
+clear_Graph()
 
 method = "chart.tracks.get"
 parameters = "&country=in"
@@ -166,10 +152,11 @@ for key in all_Tracks_Lyrics_For_Graph:
 	
 	lyrics=lyrics.replace(",","").replace("!","")
 	lyricsLine = lyrics.split("\n")
-	completeName = os.path.join(save_path, song_Name + ".csv")
+	completeName = os.path.join(Neo4j_Import_Directory_Path, song_Name + ".csv")
 	with open (completeName, 'w') as write_file:
 		write=csv.writer(write_file)
-		write.writerows([r] for r in lyricsLine)
+		for i in range(len(lyricsLine)):
+			write.writerows([r] for r in lyricsLine)
 	create_Nodes_Query = create_Nodes_Query_Fn(song_Name)
 	create_Nodes(create_Nodes_Query)
 	print(song_Name+" lyrics added to the graph")
