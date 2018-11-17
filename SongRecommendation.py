@@ -1,24 +1,10 @@
-import configparser
-config = configparser.ConfigParser()
-config.read('config.txt')
-
-from neo4j import GraphDatabase
-uri = config['Neo4j']['Bolt_URI']
-user = config['Neo4j']['User']
-password = config['Neo4j']['Password']
-
-class Graph(object):
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+from config import *
+from GraphCode import *
     
-    def close(self):
-        self._driver.close()
-    
-    @staticmethod
-    def clearGraph(driver):
-        with driver.session() as session:
-            return session.run("MATCH (n)"
-                               "DETACH DELETE n")
+def clearGraph(driver):
+    with driver.session() as session:
+        return session.run("MATCH (n)"
+                           "DETACH DELETE n")
     
 def linkUserSongAndAttributesNodes(driver):
     with driver.session() as session:
@@ -40,6 +26,6 @@ def linkUserSongAndAttributesNodes(driver):
         (s1)-[:FEATURES]->(m4)
             ''')
 
-graph = Graph(uri, user, password)
-graph.clearGraph(graph._driver)
+graph = Graph(Neo4j_Bolt_URI, Neo4j_User, Neo4j_Password)
+clearGraph(graph._driver)
 linkUserSongAndAttributesNodes(graph._driver)
