@@ -1,24 +1,13 @@
 from __future__ import print_function
 
-import configparser
-config = configparser.ConfigParser()
-config.read('config.txt')
-api_key = config['MusixMatch']['API_key']
-IBM_api_username = config['IBM NLU']['Watson_Username']
-IBM_api_password = config['IBM NLU']['Waston_Password']
-bearer = config['Genius']['Bearer']
+from config import *
+from MusixMatch import *
 
 from watson_developer_cloud import NaturalLanguageUnderstandingV1
 from watson_developer_cloud.natural_language_understanding_v1 import Features, EntitiesOptions, KeywordsOptions, CategoriesOptions, ConceptsOptions, EmotionOptions
 service = NaturalLanguageUnderstandingV1(version='2018-03-16',url='https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2018-03-19',username=IBM_api_username,password=IBM_api_password)
 
 from textblob import TextBlob
-
-import json, requests
-def call_API(method, parameters):
-	response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + api_key ).text
-	callback_To_Json = response.replace( "callback(" , "").replace( ");" , "" )
-	return json.loads(callback_To_Json)
 
 from urllib.parse import quote as encode
 def get_Lyrics(track_Name, artist_Name):
@@ -75,7 +64,7 @@ def get_Genius_Lyrics(url):
 
 IBM_url="https://gateway.watsonplatform.net/natural-language-understanding/api"
 genius_Base_Url = 'https://api.genius.com'
-headers = {'Authorization': 'Bearer ' + bearer}
+headers = {'Authorization': 'Bearer ' + Genius_Bearer}
 
 method = "chart.tracks.get"
 parameters = "&country=in"
@@ -140,7 +129,10 @@ for track in list_Of_Tracks:
 						print("\n\n☞", sentence, "\n")
 						print(sentiment_According_To_PA)
 						print(sentiment_According_To_NB)
-						sentiment_According_To_IBM=infer_IBM_Watson_Emotions(service.analyze( text=sentence, features=Features(emotion=EmotionOptions()) ).get_result())
+						try:
+							sentiment_According_To_IBM=infer_IBM_Watson_Emotions(service.analyze( text=sentence, features=Features(emotion=EmotionOptions()) ).get_result())
+						except Exception as error:
+							print("Invalid input: {}".format(e.message))
 						print("\n", sentiment_According_To_IBM)
 
 
