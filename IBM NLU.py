@@ -1,12 +1,5 @@
 from __future__ import print_function
-
-import configparser
-config = configparser.ConfigParser()
-config.read('config.txt')
-IBM_api_username = config['IBM NLU']['Watson_Username']
-IBM_api_password = config['IBM NLU']['Waston_Password']
-
-
+from config import *
 import json
 from watson_developer_cloud import NaturalLanguageUnderstandingV1
 from watson_developer_cloud.natural_language_understanding_v1 import Features, EntitiesOptions, KeywordsOptions, CategoriesOptions, ConceptsOptions, EmotionOptions
