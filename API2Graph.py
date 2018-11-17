@@ -1,53 +1,31 @@
-import configparser
-config = configparser.ConfigParser()
-config.read('config.txt')
-apikey=config['MusixMatch']['API_key']
-
+from config import *
+from GraphCode import *
+import MusixMatch as mxm
 #API
-import json, requests
-def callAPI(method, parameters):
-    response = requests.get( "https://api.musixmatch.com/ws/1.1/"+ method + "?format=jsonp&callback=callback" + parameters + "&apikey=" + apikey ).text
-    callbackToJson = response.replace( "callback(" , "").replace( ");" , "" )
-    return json.loads(callbackToJson)
 
 #Fetching
 method = "track.lyrics.get"
 parameters = "&track_id=115237681"
-TrackLyrics = callAPI(method, parameters)
+TrackLyrics = mxm.call_API(method, parameters)
 
 #Graph
-from neo4j import GraphDatabase
-uri = "bolt://localhost:7687"
-user = "neo4j"
-password = "password"
-
-class Graph(object):
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))    
-    def close(self):
-        self._driver.close()
-    @staticmethod
-    def clearGraph():
-        with graph._driver.session() as session:
-            return session.run("MATCH (n)"
-                               "DETACH DELETE n")
-    @staticmethod
-    def createNodes(tx, word, nextWord):
-        result = tx.run('''
-            MERGE (lx:lyrics{word:$word})
-                ON CREATE SET lx.count = 1
-                ON MATCH SET lx.count = lx.count + 1
-            MERGE (mx:lyrics{word:$nextWord})
-                ON CREATE SET mx.count = 1
-                ON MATCH SET mx.count = mx.count + 1
-            MERGE (lx)-[r:next]->(mx)
-                ON CREATE SET r.count = 1
-                ON MATCH SET r.count = r.count +1
-            RETURN $word, $nextWord''', word=word, nextWord=nextWord )
-        return result
+@add_method(Graph)
+# @staticmethod
+def createNodes(tx, word, nextWord):
+    result = tx.run('''
+        MERGE (lx:lyrics{word:$word})
+            ON CREATE SET lx.count = 1
+            ON MATCH SET lx.count = lx.count + 1
+        MERGE (mx:lyrics{word:$nextWord})
+            ON CREATE SET mx.count = 1
+            ON MATCH SET mx.count = mx.count + 1
+        MERGE (lx)-[r:next]->(mx)
+            ON CREATE SET r.count = 1
+            ON MATCH SET r.count = r.count +1
+        RETURN $word, $nextWord''', word=word, nextWord=nextWord )
+    return result
     
-graph = Graph(uri, user, password)
-graph.clearGraph()
+graph = Graph(Neo4j_Bolt_URI, Neo4j_User, Neo4j_Password)
 
 #Import
 def createNodes(word, nextWord):
@@ -55,6 +33,13 @@ def createNodes(word, nextWord):
             greeting = session.write_transaction(graph.createNodes, word, nextWord)
             print(greeting)
 
+def clear_Graph():
+        with graph._driver.session() as session:
+            return session.run("MATCH (n)"
+                               "DETACH DELETE n")
+
+
+clear_Graph()
 
 for dictionary in TrackLyrics.items():
     lyrics, disclaimer = dictionary[1]["body"]["lyrics"]["lyrics_body"].split("...\n\n*******")
