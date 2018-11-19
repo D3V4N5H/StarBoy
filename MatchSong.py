@@ -5,6 +5,7 @@ from MusixMatch import *
 
 import re
 from collections import OrderedDict
+from textblob import Word
 
 import pyaudio
 from bs4 import BeautifulSoup
@@ -25,10 +26,17 @@ def get_Genius_Lyrics(song_ID):
 			return html.find("div", class_="lyrics").get_text()
 
 lyrics=get_Genius_Lyrics(2851948)
+while ("[" in lyrics and "]" in lyrics):
+	before, rest = lyrics.split("[",maxsplit=1)
+	inside, after = rest.split("]",maxsplit=1)
+	lyrics = before + after
 lyrics=re.split(', | |\n',lyrics)
 lyrics = list(filter(None, lyrics))
 lyrics=list(OrderedDict.fromkeys(lyrics))
 print(lyrics)
+lemmatizedWords=[]
+for word in lyrics:
+	lemmatizedWords.append(Word(word).lemmatize())
 
 try:
 	from Queue import Queue, Full
@@ -49,8 +57,9 @@ class MyRecognizeCallback(RecognizeCallback):
 		print(transcript[0]['transcript'])
 		earLobe.append(transcript[0]['transcript'])
 		for word in transcript[0]['transcript'].split(' '):
-			if word in lyrics:
-				print('✅ '+word + ' detected from lyrics')
+			check=Word(word).lemmatize()
+			if check in lyrics:
+				print('✅ ' + word + ' detected from lyrics')
 	def on_connected(self):
 		print('Connection was successful')
 	def on_error(self, error):
