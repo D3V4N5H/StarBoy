@@ -1,42 +1,29 @@
 from __future__ import print_function
 
 from config import *
-from MusixMatch import *
+from TopLyrics import *
 
 import re
 from collections import OrderedDict
 from textblob import Word
 
 import pyaudio
-from bs4 import BeautifulSoup
 from watson_developer_cloud import SpeechToTextV1
 from watson_developer_cloud.websocket import RecognizeCallback, AudioSource
 from threading import Thread
 
 #2851948
-
-def get_Genius_Lyrics(song_ID):
-	search_url = genius_Base_Url + '/songs/'+str(song_ID)+'?text_format=plain'
-	response=requests.get(search_url, headers=headers)
-	if response.json()['meta']['status']==200:
-		url = response.json()['response']['song']['url']
-		if url:
-			page = requests.get(url)
-			html = BeautifulSoup(page.text, "html.parser")
-			return html.find("div", class_="lyrics").get_text()
-
-lyrics=get_Genius_Lyrics(2851948)
-while ("[" in lyrics and "]" in lyrics):
-	before, rest = lyrics.split("[",maxsplit=1)
-	inside, after = rest.split("]",maxsplit=1)
-	lyrics = before + after
-lyrics=re.split(', | |\n',lyrics)
-lyrics = list(filter(None, lyrics))
-lyrics=list(OrderedDict.fromkeys(lyrics))
-print(lyrics)
-lemmatizedWords=[]
-for word in lyrics:
-	lemmatizedWords.append(Word(word).lemmatize())
+top_Tracks_Dict = get_Top_Tracks_Lyrics("in")
+for track in top_Tracks_Dict:
+	lyrics=re.split(', | |\n',top_Tracks_Dict[track]['lyrics'])
+	lyrics = list(filter(None, lyrics))
+	lyrics=list(OrderedDict.fromkeys(lyrics))
+	lemmatizedWords=[]
+	for word in lyrics:
+		lemmatizedWords.append(Word(word).lemmatize().lower())
+	top_Tracks_Dict[track]['lemmatizedWordsList']=lemmatizedWords
+	print(track,'-',top_Tracks_Dict[track]['artist_name'])
+	print('Lemmatized Words:', top_Tracks_Dict[track]['lemmatizedWordsList'])
 
 try:
 	from Queue import Queue, Full
@@ -58,8 +45,9 @@ class MyRecognizeCallback(RecognizeCallback):
 		earLobe.append(transcript[0]['transcript'])
 		for word in transcript[0]['transcript'].split(' '):
 			check=Word(word).lemmatize()
-			if check in lyrics:
-				print('✅ ' + word + ' detected from lyrics')
+			for track in top_Tracks_Dict:
+				if check.lower() in top_Tracks_Dict[track]['lemmatizedWordsList']:
+					print('✅ ' + word + ' detected from lyrics of ' + track)
 	def on_connected(self):
 		print('Connection was successful')
 	def on_error(self, error):
