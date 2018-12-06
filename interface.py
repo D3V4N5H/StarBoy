@@ -8,8 +8,6 @@ from tkinter import ttk
 class Interface:
 
 	def __init__(self, master):
-		style= ttk.Style(master)
-		# style.theme_use('default')
 		
 		title = ttk.Label(master, text= 'Flubber - Your Music Connoisseur')
 		title.config(justify= CENTER, font= ('Courier',32,'bold'))
@@ -26,28 +24,35 @@ class Interface:
 
 		ttk.Label(main_Frame, text= "Track List").grid(row= 2, column= 0)
 		ttk.Label(main_Frame, text= "Lyrics").grid(row= 2, column= 1)
-		track_List_Display = Text(main_Frame, width= 40, height= 10)
+		track_List_Display = ttk.Treeview(main_Frame)
+
+		def on_Click_Fetch_Track_Lyrics():
+			global top_Tracks_Dict
+			selected = track_List_Display.selection()
+			lyrics_Display.delete('1.0','end')
+			lyrics_Display.insert(END, selected)
+			lyrics_Display.config(state= 'disabled')
+		
+
+		# track_List_Display.bind('<<TreeviewSelect>>', lambda e: on_Click_Fetch_Track_Lyrics)
 		track_List_Display.grid(row= 3, column=0)
 		lyrics_Display = Text(main_Frame, width= 40, height= 10, wrap= 'word')
 		lyrics_Display.grid(row= 3, column=1)
-		
+
 		def on_Click_Fetch_Top_Tracks():
+			global top_Tracks_Dict
 			self.fetch_Top_10_Button.state([('disabled')])
 			top_Tracks_Dict = get_Top_Tracks(option.get())
 			print('\033[1m Dictionary downloaded \033[0m ')
+			track_Count = 0
 			for track in top_Tracks_Dict:
-				# def on_Click_Top_Track():
-				# 	selected = treeview.selection()
-				# treeview.bind('<<TreeviewSelect>>', on_Click_Top_Track)
-				track_List_Display.insert(END, track+'\n')
-			# for track in top_Tracks_Dict:
-			# 	lyrics=re.split(', | |\n',top_Tracks_Dict[track]['lyrics'])
-			# 	lyrics_Display.insert('1.0', lyrics)
+				track_Count = track_Count + 1
+				track_List_Display.insert('', 'end', 'track '+str(track_Count), text= track)
 			self.fetch_Top_10_Button.state([('!disabled')])
 			self.fetch_Top_10_Button.config(text= "Fetch")
 
-		def on_Click_Fetch_Track_Lyrics():
-			pass
+			
+				
 
 
 		self.fetch_Top_10_Button = ttk.Button(main_Frame, text = "Fetch Top 10 Tracks", command= on_Click_Fetch_Top_Tracks)
