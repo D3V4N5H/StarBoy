@@ -8,6 +8,10 @@ from tkinter import ttk
 class Interface:
 
 	def __init__(self, master):
+		
+		master.configure(background= '#ececec')
+
+		
 		title = ttk.Label(master, text= 'Flubber - Your Music Connoisseur')
 		title.config(justify= CENTER, font= ('Courier',32,'bold'))
 		title.pack(pady= 20, padx= 10)
