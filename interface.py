@@ -83,7 +83,7 @@ class Interface:
 			# if track_Name!='':
 			track_Lyrics = get_Lyrics_From_Track_Name_And_Artist_Name(selected[0], artist_Name)
 			print('Lyrics:\n',track_Lyrics)
-			lyrics_Display.insert( 1.0 , str(track_Lyrics) )
+			lyrics_Display.insert( 1.0 , str(track_Lyrics['lyrics']) )
 			# lyrics_Display.config(state= 'disabled')
 
 		fetch_Top_10_Button.grid(row= 4, column= 0)
