@@ -6,29 +6,26 @@ from watson_developer_cloud.natural_language_understanding_v1 import Features, E
 
 service = NaturalLanguageUnderstandingV1(version='2018-03-16',url='https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2018-03-19',username=IBM_api_username,password=IBM_api_password)
 
-response = service.analyze(
-	text="I'm tryna put you in the worst mood ah "
-	'P1 cleaner than your church shoes ah '
-	'Milli point two just to hurt you ah '
-	"All red Lamb' just to tease you ah "
-	'None of these toys on lease too ah '
-	'Made your whole year in a week too yah '
-	'Main bitch out your league too ah '
-	'Side bitch out of your league too ah '
-	'House so empty need a centerpiece '
-	'Twenty racks a table cut from ebony '
-	'Cut that ivory into skinny pieces '
-	'Then she clean it with her face man I love my baby '
-	'You talking money need a hearing aid '
-	"You talking 'bout me I don't see a shade "
-	'Switch up my style I take any lane '
-	'I switch up my cup I kill any pain ',
-	features=Features(	emotion=EmotionOptions()
+def Watson_Analyze(text):
+	return service.analyze(text= text,features=Features(	emotion=EmotionOptions()) ).get_result()
 						# concepts=ConceptsOptions(limit=10),
 						# categories=CategoriesOptions(),
 						# entities=EntitiesOptions(),
 						# keywords=KeywordsOptions(),
-
-						 ) ).get_result()
+						 
  
-print(json.dumps(response, indent=2))
+# print(json.dumps(response, indent=2))
+
+def infer_IBM_Watson_Emotions(response):
+	emotion_Dictionary=response['emotion']['document']['emotion']
+	sadness = emotion_Dictionary['sadness']
+	sadnessPercentage = str(round(sadness*100,2))
+	joy = emotion_Dictionary['joy']
+	joyPercentage = str(round(joy*100,2))+'%'
+	fear = emotion_Dictionary['fear']
+	fearPercentage = str(round(fear*100,2))+'%'
+	disgust = emotion_Dictionary['disgust']
+	disgustPercentage = str(round(disgust*100,2))+'%'
+	anger = emotion_Dictionary['anger']
+	angerPercentage = str(round(anger*100,2))+'%'
+	return {'sadness': sadnessPercentage,'joy': joyPercentage,'fear': fearPercentage,'disgust': disgustPercentage,'anger': angerPercentage}
