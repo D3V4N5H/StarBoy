@@ -1,21 +1,27 @@
 #!/usr/bin/python3
+from __future__ import print_function
+from config import *
 from TopLyrics import *
 from tkinter import *
 from tkinter import ttk
 # import tkinter
 # import _tkinter
 # tkinter._test()
-import asyncio
+
+
 class Interface:
 	def __init__(self, master):
+		
+		import json
+		from watson_developer_cloud import NaturalLanguageUnderstandingV1
+		from watson_developer_cloud.natural_language_understanding_v1 import Features, EntitiesOptions, KeywordsOptions, CategoriesOptions, ConceptsOptions, EmotionOptions
+		service = NaturalLanguageUnderstandingV1(version='2018-03-16',url='https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2018-03-19',username=IBM_api_username,password=IBM_api_password)
+
 		master.title('Flubber')
 		master.resizable(False,False)
 		master.configure(background= '#ececec')
 
 		style = ttk.Style()
-		# style.configure('TFrame', background= "", )
-		# style.configure('TButton', background="", )
-		# style.configure('TLabel', background="", )
 		style.configure('WhiteFont.TLabel', font= ('Arial', 18, 'bold') )
 
 		title = ttk.Label(master, text= 'Flubber - Your Music Connoisseur')
@@ -39,12 +45,6 @@ class Interface:
 		track_List_Display = ttk.Treeview(main_Frame)
 
 		def update_Selected_Top_Track(event):
-			# print('type of selection:',type(track_List_Display.selection()))
-			# for item in track_List_Display.selection():
-			# 	item_text = track_List_Display.item(item,"text")
-			# 	print(item_text)
-				# print('type of item:',type(item))				
-			# print(track_List_Display.item(0,"text"))
 			global selected
 			selected = track_List_Display.selection()
 
@@ -80,7 +80,6 @@ class Interface:
 			lyrics_Display.delete(1.0,END)
 			print('track_Name:',selected)
 			print('artist_Name:',artist_Name)
-			# if track_Name!='':
 			track_Lyrics = get_Lyrics_From_Track_Name_And_Artist_Name(selected[0], artist_Name)
 			print('Lyrics:\n',track_Lyrics)
 			lyrics_Display.insert( 1.0 , str(track_Lyrics['lyrics']) )
@@ -91,6 +90,37 @@ class Interface:
 		fetch_Lyrics_Button.grid(row= 4, column= 1)
 		emotion_IBM_Label = ttk.Label(main_Frame, text= "Emotions by IBM:")
 		emotion_IBM_Label.grid(row= 5, column= 0)
+
+		def Watson_Analyze(text):
+			return service.analyze(text= text,features=Features(	emotion=EmotionOptions()) ).get_result()
+
+
+		def infer_IBM_Watson_Emotions(response):
+			emotion_Dictionary=response['emotion']['document']['emotion']
+			sadness = emotion_Dictionary['sadness']
+			sadnessPercentage = str(round(sadness*100,2))+'%'
+			joy = emotion_Dictionary['joy']
+			joyPercentage = str(round(joy*100,2))+'%'
+			fear = emotion_Dictionary['fear']
+			fearPercentage = str(round(fear*100,2))+'%'
+			disgust = emotion_Dictionary['disgust']
+			disgustPercentage = str(round(disgust*100,2))+'%'
+			anger = emotion_Dictionary['anger']
+			angerPercentage = str(round(anger*100,2))+'%'
+			return {'sadness': sadnessPercentage,'joy': joyPercentage,'fear': fearPercentage,'disgust': disgustPercentage,'anger': angerPercentage}
+
+		def on_Click_Watson_Emotion_Button():
+			lyrics = lyrics_Display.get('1.0', 'end')
+			lyrics
+			emotions = infer_IBM_Watson_Emotions(Watson_Analyze(lyrics))
+			sad_Value_IBM_Label.config(text= emotions['sadness'])
+			joy_Value_IBM_Label.config(text= emotions['joy'])
+			fear_Value_IBM_Label.config(text= emotions['fear'])
+			disgust_Value_IBM_Label.config(text= emotions['disgust'])
+			anger_Value_IBM_Label.config(text= emotions['anger'])
+
+		watson_Emotion_Button = ttk.Button(main_Frame, text="IBM Watson Sentiment Analysis", command= on_Click_Watson_Emotion_Button)
+		watson_Emotion_Button.grid(row= 5, column= 1)
 		sad_IBM_Label = ttk.Label(main_Frame, text="Sad")
 		sad_IBM_Label.grid(row= 6, column= 0)
 		sad_Value_IBM_Label = ttk.Label(main_Frame)
